@@ -16,6 +16,15 @@ Take-home assignment: URL shortener service เขียนด้วย Java (Sp
 - JDK 21+
 - Docker (สำหรับรัน PostgreSQL ใน local)
 
+## Database (local dev)
+
+```bash
+cp .env.example .env
+docker compose up -d db
+```
+
+ค่า default ใน `.env.example` ตั้ง PostgreSQL ไว้ที่ host port `5433` (ไม่ใช่ `5432`) เผื่อเครื่อง dev มี Postgres/ container อื่นครอง port 5432 อยู่แล้ว แก้ `POSTGRES_PORT` ใน `.env` ได้ตามต้องการ
+
 ## Build & Run
 
 ```bash
@@ -29,6 +38,8 @@ Windows (PowerShell):
 .\mvnw.cmd clean package
 .\mvnw.cmd spring-boot:run
 ```
+
+แอปรันที่ `http://localhost:8080` โดย default — ถ้า port 8080 ถูกใช้งานอยู่แล้ว override ได้ด้วย `SERVER_PORT` env var เช่น `SERVER_PORT=8081 ./mvnw spring-boot:run`
 
 ## Run tests
 

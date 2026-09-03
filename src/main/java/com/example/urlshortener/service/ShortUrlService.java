@@ -8,6 +8,7 @@ import com.example.urlshortener.dto.ShortenUrlRequest;
 import com.example.urlshortener.dto.ShortenUrlResponse;
 import com.example.urlshortener.entity.ShortUrl;
 import com.example.urlshortener.exception.ShortCodeGenerationException;
+import com.example.urlshortener.exception.ShortUrlNotFoundException;
 import com.example.urlshortener.repository.ShortUrlRepository;
 import com.example.urlshortener.repository.UserRepository;
 import com.example.urlshortener.service.shortcode.ShortCodeGenerator;
@@ -48,6 +49,12 @@ public class ShortUrlService {
         return toResponse(saved);
     }
 
+    public String resolve(String shortCode) {
+        return shortUrlRepository.findByShortCodeAndActiveTrue(shortCode)
+                .map(ShortUrl::getOriginalUrl)
+                .orElseThrow(ShortUrlNotFoundException::new);
+    }
+
     private String generateUniqueShortCode() {
         for (int attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
             String candidate = shortCodeGenerator.generate();
@@ -62,7 +69,7 @@ public class ShortUrlService {
         return new ShortenUrlResponse(
                 shortUrl.getId(),
                 shortUrl.getShortCode(),
-                baseUrl + "/r/" + shortUrl.getShortCode(),
+                baseUrl + "/" + shortUrl.getShortCode(),
                 shortUrl.getOriginalUrl(),
                 shortUrl.getCreatedAt());
     }

@@ -1,8 +1,10 @@
 package com.example.urlshortener.service;
 
 import java.time.Instant;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +19,7 @@ import com.example.urlshortener.dto.ShortenUrlRequest;
 import com.example.urlshortener.dto.ShortenUrlResponse;
 import com.example.urlshortener.entity.ShortUrl;
 import com.example.urlshortener.entity.User;
+import com.example.urlshortener.exception.ShortUrlNotFoundException;
 import com.example.urlshortener.repository.ShortUrlRepository;
 import com.example.urlshortener.repository.UserRepository;
 import com.example.urlshortener.service.shortcode.ShortCodeGenerator;
@@ -61,7 +64,7 @@ class ShortUrlServiceTest {
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.shortCode()).isEqualTo("abc123");
-        assertThat(response.shortUrl()).isEqualTo("http://localhost:8080/r/abc123");
+        assertThat(response.shortUrl()).isEqualTo("http://localhost:8080/abc123");
         assertThat(response.originalUrl()).isEqualTo("https://example.com/some/very/long/link");
         assertThat(response.createdAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
     }
@@ -81,5 +84,34 @@ class ShortUrlServiceTest {
 
         assertThat(response.shortCode()).isEqualTo("uniq02");
         verify(shortCodeGenerator, times(2)).generate();
+    }
+
+    @Test
+    void resolvesActiveShortUrlToOriginalUrl() {
+        ShortUrl shortUrl = ShortUrl.builder()
+                .shortCode("abc123")
+                .originalUrl("https://example.com/target")
+                .active(true)
+                .build();
+
+        when(shortUrlRepository.findByShortCodeAndActiveTrue("abc123")).thenReturn(Optional.of(shortUrl));
+
+        assertThat(shortUrlService.resolve("abc123")).isEqualTo("https://example.com/target");
+    }
+
+    @Test
+    void throwsNotFoundForMissingShortCode() {
+        when(shortUrlRepository.findByShortCodeAndActiveTrue("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> shortUrlService.resolve("missing"))
+                .isInstanceOf(ShortUrlNotFoundException.class);
+    }
+
+    @Test
+    void throwsNotFoundForDeactivatedShortCode() {
+        when(shortUrlRepository.findByShortCodeAndActiveTrue("deactivated")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> shortUrlService.resolve("deactivated"))
+                .isInstanceOf(ShortUrlNotFoundException.class);
     }
 }

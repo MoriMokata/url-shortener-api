@@ -1,13 +1,17 @@
 package com.example.urlshortener.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.urlshortener.dto.ShortenUrlRequest;
 import com.example.urlshortener.dto.ShortenUrlResponse;
+import com.example.urlshortener.dto.ShortUrlSummaryResponse;
 import com.example.urlshortener.entity.ShortUrl;
 import com.example.urlshortener.exception.ShortCodeGenerationException;
+import com.example.urlshortener.exception.ShortUrlAccessDeniedException;
 import com.example.urlshortener.exception.ShortUrlNotFoundException;
 import com.example.urlshortener.repository.ShortUrlRepository;
 import com.example.urlshortener.repository.UserRepository;
@@ -55,6 +59,24 @@ public class ShortUrlService {
                 .orElseThrow(ShortUrlNotFoundException::new);
     }
 
+    public List<ShortUrlSummaryResponse> listByOwner(Long ownerId) {
+        return shortUrlRepository.findAllByOwnerId(ownerId).stream()
+                .map(this::toSummaryResponse)
+                .toList();
+    }
+
+    @Transactional
+    public void deactivate(Long shortUrlId, Long ownerId) {
+        ShortUrl shortUrl = shortUrlRepository.findById(shortUrlId)
+                .orElseThrow(ShortUrlNotFoundException::new);
+
+        if (!shortUrl.getOwner().getId().equals(ownerId)) {
+            throw new ShortUrlAccessDeniedException();
+        }
+
+        shortUrl.setActive(false);
+    }
+
     private String generateUniqueShortCode() {
         for (int attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
             String candidate = shortCodeGenerator.generate();
@@ -71,6 +93,16 @@ public class ShortUrlService {
                 shortUrl.getShortCode(),
                 baseUrl + "/" + shortUrl.getShortCode(),
                 shortUrl.getOriginalUrl(),
+                shortUrl.getCreatedAt());
+    }
+
+    private ShortUrlSummaryResponse toSummaryResponse(ShortUrl shortUrl) {
+        return new ShortUrlSummaryResponse(
+                shortUrl.getId(),
+                shortUrl.getShortCode(),
+                baseUrl + "/" + shortUrl.getShortCode(),
+                shortUrl.getOriginalUrl(),
+                shortUrl.isActive(),
                 shortUrl.getCreatedAt());
     }
 }

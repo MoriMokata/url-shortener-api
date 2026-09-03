@@ -2,12 +2,17 @@ package com.example.urlshortener.controller;
 
 import com.example.urlshortener.dto.ShortenUrlRequest;
 import com.example.urlshortener.dto.ShortenUrlResponse;
+import com.example.urlshortener.dto.ShortUrlSummaryResponse;
 import com.example.urlshortener.security.AuthenticatedUser;
 import com.example.urlshortener.service.ShortUrlService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,5 +32,16 @@ public class ShortUrlController {
             @Valid @RequestBody ShortenUrlRequest request,
             @AuthenticationPrincipal AuthenticatedUser principal) {
         return shortUrlService.createShortUrl(request, principal.id());
+    }
+
+    @GetMapping("/urls")
+    public List<ShortUrlSummaryResponse> listMyUrls(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return shortUrlService.listByOwner(principal.id());
+    }
+
+    @DeleteMapping("/urls/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUrl(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser principal) {
+        shortUrlService.deactivate(id, principal.id());
     }
 }

@@ -15,10 +15,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import com.example.urlshortener.dto.ShortenUrlRequest;
 import com.example.urlshortener.dto.ShortenUrlResponse;
+import com.example.urlshortener.dto.ShortUrlSummaryResponse;
 import com.example.urlshortener.entity.ShortUrl;
 import com.example.urlshortener.entity.User;
+import com.example.urlshortener.exception.ShortUrlAccessDeniedException;
 import com.example.urlshortener.exception.ShortUrlNotFoundException;
 import com.example.urlshortener.repository.ShortUrlRepository;
 import com.example.urlshortener.repository.UserRepository;
@@ -112,6 +116,73 @@ class ShortUrlServiceTest {
         when(shortUrlRepository.findByShortCodeAndActiveTrue("deactivated")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> shortUrlService.resolve("deactivated"))
+                .isInstanceOf(ShortUrlNotFoundException.class);
+    }
+
+    @Test
+    void listsOnlyShortUrlsOwnedByGivenOwner() {
+        User owner = User.builder().id(1L).build();
+        ShortUrl ownUrl = ShortUrl.builder()
+                .id(100L)
+                .shortCode("own001")
+                .originalUrl("https://example.com/own")
+                .owner(owner)
+                .active(true)
+                .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
+                .build();
+
+        when(shortUrlRepository.findAllByOwnerId(1L)).thenReturn(List.of(ownUrl));
+
+        List<ShortUrlSummaryResponse> result = shortUrlService.listByOwner(1L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(100L);
+        assertThat(result.get(0).shortCode()).isEqualTo("own001");
+        assertThat(result.get(0).shortUrl()).isEqualTo("http://localhost:8080/own001");
+        assertThat(result.get(0).isActive()).isTrue();
+    }
+
+    @Test
+    void deactivatesShortUrlWhenCallerIsOwner() {
+        User owner = User.builder().id(1L).build();
+        ShortUrl shortUrl = ShortUrl.builder()
+                .id(100L)
+                .shortCode("own001")
+                .originalUrl("https://example.com/own")
+                .owner(owner)
+                .active(true)
+                .build();
+
+        when(shortUrlRepository.findById(100L)).thenReturn(Optional.of(shortUrl));
+
+        shortUrlService.deactivate(100L, 1L);
+
+        assertThat(shortUrl.isActive()).isFalse();
+    }
+
+    @Test
+    void rejectsDeactivationWhenCallerIsNotOwner() {
+        User owner = User.builder().id(1L).build();
+        ShortUrl shortUrl = ShortUrl.builder()
+                .id(100L)
+                .shortCode("own001")
+                .originalUrl("https://example.com/own")
+                .owner(owner)
+                .active(true)
+                .build();
+
+        when(shortUrlRepository.findById(100L)).thenReturn(Optional.of(shortUrl));
+
+        assertThatThrownBy(() -> shortUrlService.deactivate(100L, 2L))
+                .isInstanceOf(ShortUrlAccessDeniedException.class);
+        assertThat(shortUrl.isActive()).isTrue();
+    }
+
+    @Test
+    void throwsNotFoundWhenDeactivatingMissingShortUrl() {
+        when(shortUrlRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> shortUrlService.deactivate(999L, 1L))
                 .isInstanceOf(ShortUrlNotFoundException.class);
     }
 }

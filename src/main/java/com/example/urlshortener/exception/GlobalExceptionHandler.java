@@ -22,4 +22,9 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleShortUrlNotFound(ShortUrlNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
+
+    @ExceptionHandler(ShortUrlAccessDeniedException.class)
+    public ProblemDetail handleShortUrlAccessDenied(ShortUrlAccessDeniedException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
 }

@@ -1,10 +1,9 @@
 package com.example.urlshortener.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.example.urlshortener.entity.ShortUrl;
 import com.example.urlshortener.entity.User;
 import java.time.Instant;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -38,7 +37,7 @@ class ShortUrlRepositoryTest {
                 .active(true)
                 .build());
 
-        assertThat(shortUrlRepository.findByShortCodeAndActiveTrue("jpa001")).isPresent();
+        Assertions.assertThat(shortUrlRepository.findByShortCodeAndActiveTrue("jpa001")).isPresent();
     }
 
     @Test
@@ -51,7 +50,7 @@ class ShortUrlRepositoryTest {
                 .active(false)
                 .build());
 
-        assertThat(shortUrlRepository.findByShortCodeAndActiveTrue("jpa002")).isEmpty();
+        Assertions.assertThat(shortUrlRepository.findByShortCodeAndActiveTrue("jpa002")).isEmpty();
     }
 
     @Test
@@ -70,7 +69,7 @@ class ShortUrlRepositoryTest {
                 .owner(ownerB)
                 .build());
 
-        assertThat(shortUrlRepository.findAllByOwnerId(ownerA.getId()))
+        Assertions.assertThat(shortUrlRepository.findAllByOwnerId(ownerA.getId()))
                 .extracting(ShortUrl::getShortCode)
                 .containsExactly("jpa00a");
     }
@@ -84,7 +83,7 @@ class ShortUrlRepositoryTest {
                 .owner(owner)
                 .build());
 
-        assertThat(shortUrlRepository.existsByShortCode("jpa003")).isTrue();
-        assertThat(shortUrlRepository.existsByShortCode("jpa999")).isFalse();
+        Assertions.assertThat(shortUrlRepository.existsByShortCode("jpa003")).isTrue();
+        Assertions.assertThat(shortUrlRepository.existsByShortCode("jpa999")).isFalse();
     }
 }

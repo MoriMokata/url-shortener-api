@@ -1,22 +1,5 @@
 package com.example.urlshortener.service;
 
-import java.time.Instant;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import static org.mockito.ArgumentMatchers.any;
-import org.mockito.Mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
 import com.example.urlshortener.dto.ShortenUrlRequest;
 import com.example.urlshortener.dto.ShortenUrlResponse;
 import com.example.urlshortener.dto.ShortUrlSummaryResponse;
@@ -27,6 +10,17 @@ import com.example.urlshortener.exception.ShortUrlNotFoundException;
 import com.example.urlshortener.repository.ShortUrlRepository;
 import com.example.urlshortener.repository.UserRepository;
 import com.example.urlshortener.service.shortcode.ShortCodeGenerator;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ShortUrlServiceTest {
@@ -54,10 +48,10 @@ class ShortUrlServiceTest {
         User owner = User.builder().id(1L).build();
         ShortenUrlRequest request = new ShortenUrlRequest("https://example.com/some/very/long/link");
 
-        when(userRepository.getReferenceById(1L)).thenReturn(owner);
-        when(shortCodeGenerator.generate()).thenReturn("abc123");
-        when(shortUrlRepository.existsByShortCode("abc123")).thenReturn(false);
-        when(shortUrlRepository.save(any(ShortUrl.class))).thenAnswer(invocation -> {
+        Mockito.when(userRepository.getReferenceById(1L)).thenReturn(owner);
+        Mockito.when(shortCodeGenerator.generate()).thenReturn("abc123");
+        Mockito.when(shortUrlRepository.existsByShortCode("abc123")).thenReturn(false);
+        Mockito.when(shortUrlRepository.save(ArgumentMatchers.any(ShortUrl.class))).thenAnswer(invocation -> {
             ShortUrl saved = invocation.getArgument(0);
             saved.setId(10L);
             saved.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
@@ -66,11 +60,11 @@ class ShortUrlServiceTest {
 
         ShortenUrlResponse response = shortUrlService.createShortUrl(request, 1L);
 
-        assertThat(response.id()).isEqualTo(10L);
-        assertThat(response.shortCode()).isEqualTo("abc123");
-        assertThat(response.shortUrl()).isEqualTo("http://localhost:8080/abc123");
-        assertThat(response.originalUrl()).isEqualTo("https://example.com/some/very/long/link");
-        assertThat(response.createdAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+        Assertions.assertThat(response.id()).isEqualTo(10L);
+        Assertions.assertThat(response.shortCode()).isEqualTo("abc123");
+        Assertions.assertThat(response.shortUrl()).isEqualTo("http://localhost:8080/abc123");
+        Assertions.assertThat(response.originalUrl()).isEqualTo("https://example.com/some/very/long/link");
+        Assertions.assertThat(response.createdAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
     }
 
     @Test
@@ -78,16 +72,17 @@ class ShortUrlServiceTest {
         User owner = User.builder().id(1L).build();
         ShortenUrlRequest request = new ShortenUrlRequest("https://example.com/collision-case");
 
-        when(userRepository.getReferenceById(1L)).thenReturn(owner);
-        when(shortCodeGenerator.generate()).thenReturn("dup001", "uniq02");
-        when(shortUrlRepository.existsByShortCode("dup001")).thenReturn(true);
-        when(shortUrlRepository.existsByShortCode("uniq02")).thenReturn(false);
-        when(shortUrlRepository.save(any(ShortUrl.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        Mockito.when(userRepository.getReferenceById(1L)).thenReturn(owner);
+        Mockito.when(shortCodeGenerator.generate()).thenReturn("dup001", "uniq02");
+        Mockito.when(shortUrlRepository.existsByShortCode("dup001")).thenReturn(true);
+        Mockito.when(shortUrlRepository.existsByShortCode("uniq02")).thenReturn(false);
+        Mockito.when(shortUrlRepository.save(ArgumentMatchers.any(ShortUrl.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         ShortenUrlResponse response = shortUrlService.createShortUrl(request, 1L);
 
-        assertThat(response.shortCode()).isEqualTo("uniq02");
-        verify(shortCodeGenerator, times(2)).generate();
+        Assertions.assertThat(response.shortCode()).isEqualTo("uniq02");
+        Mockito.verify(shortCodeGenerator, Mockito.times(2)).generate();
     }
 
     @Test
@@ -98,24 +93,24 @@ class ShortUrlServiceTest {
                 .active(true)
                 .build();
 
-        when(shortUrlRepository.findByShortCodeAndActiveTrue("abc123")).thenReturn(Optional.of(shortUrl));
+        Mockito.when(shortUrlRepository.findByShortCodeAndActiveTrue("abc123")).thenReturn(Optional.of(shortUrl));
 
-        assertThat(shortUrlService.resolve("abc123")).isEqualTo("https://example.com/target");
+        Assertions.assertThat(shortUrlService.resolve("abc123")).isEqualTo("https://example.com/target");
     }
 
     @Test
     void throwsNotFoundForMissingShortCode() {
-        when(shortUrlRepository.findByShortCodeAndActiveTrue("missing")).thenReturn(Optional.empty());
+        Mockito.when(shortUrlRepository.findByShortCodeAndActiveTrue("missing")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> shortUrlService.resolve("missing"))
+        Assertions.assertThatThrownBy(() -> shortUrlService.resolve("missing"))
                 .isInstanceOf(ShortUrlNotFoundException.class);
     }
 
     @Test
     void throwsNotFoundForDeactivatedShortCode() {
-        when(shortUrlRepository.findByShortCodeAndActiveTrue("deactivated")).thenReturn(Optional.empty());
+        Mockito.when(shortUrlRepository.findByShortCodeAndActiveTrue("deactivated")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> shortUrlService.resolve("deactivated"))
+        Assertions.assertThatThrownBy(() -> shortUrlService.resolve("deactivated"))
                 .isInstanceOf(ShortUrlNotFoundException.class);
     }
 
@@ -131,15 +126,15 @@ class ShortUrlServiceTest {
                 .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
                 .build();
 
-        when(shortUrlRepository.findAllByOwnerId(1L)).thenReturn(List.of(ownUrl));
+        Mockito.when(shortUrlRepository.findAllByOwnerId(1L)).thenReturn(List.of(ownUrl));
 
         List<ShortUrlSummaryResponse> result = shortUrlService.listByOwner(1L);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).id()).isEqualTo(100L);
-        assertThat(result.get(0).shortCode()).isEqualTo("own001");
-        assertThat(result.get(0).shortUrl()).isEqualTo("http://localhost:8080/own001");
-        assertThat(result.get(0).isActive()).isTrue();
+        Assertions.assertThat(result).hasSize(1);
+        Assertions.assertThat(result.get(0).id()).isEqualTo(100L);
+        Assertions.assertThat(result.get(0).shortCode()).isEqualTo("own001");
+        Assertions.assertThat(result.get(0).shortUrl()).isEqualTo("http://localhost:8080/own001");
+        Assertions.assertThat(result.get(0).isActive()).isTrue();
     }
 
     @Test
@@ -153,11 +148,11 @@ class ShortUrlServiceTest {
                 .active(true)
                 .build();
 
-        when(shortUrlRepository.findById(100L)).thenReturn(Optional.of(shortUrl));
+        Mockito.when(shortUrlRepository.findById(100L)).thenReturn(Optional.of(shortUrl));
 
         shortUrlService.deactivate(100L, 1L);
 
-        assertThat(shortUrl.isActive()).isFalse();
+        Assertions.assertThat(shortUrl.isActive()).isFalse();
     }
 
     @Test
@@ -171,18 +166,18 @@ class ShortUrlServiceTest {
                 .active(true)
                 .build();
 
-        when(shortUrlRepository.findById(100L)).thenReturn(Optional.of(shortUrl));
+        Mockito.when(shortUrlRepository.findById(100L)).thenReturn(Optional.of(shortUrl));
 
-        assertThatThrownBy(() -> shortUrlService.deactivate(100L, 2L))
+        Assertions.assertThatThrownBy(() -> shortUrlService.deactivate(100L, 2L))
                 .isInstanceOf(ShortUrlAccessDeniedException.class);
-        assertThat(shortUrl.isActive()).isTrue();
+        Assertions.assertThat(shortUrl.isActive()).isTrue();
     }
 
     @Test
     void throwsNotFoundWhenDeactivatingMissingShortUrl() {
-        when(shortUrlRepository.findById(999L)).thenReturn(Optional.empty());
+        Mockito.when(shortUrlRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> shortUrlService.deactivate(999L, 1L))
+        Assertions.assertThatThrownBy(() -> shortUrlService.deactivate(999L, 1L))
                 .isInstanceOf(ShortUrlNotFoundException.class);
     }
 }

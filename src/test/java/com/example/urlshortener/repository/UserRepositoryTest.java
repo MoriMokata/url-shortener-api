@@ -1,9 +1,8 @@
 package com.example.urlshortener.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.example.urlshortener.entity.User;
 import java.time.Instant;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -26,7 +25,7 @@ class UserRepositoryTest {
 
         userRepository.save(user);
 
-        assertThat(userRepository.findByEmail("jpa-test-user@example.com")).isPresent();
+        Assertions.assertThat(userRepository.findByEmail("jpa-test-user@example.com")).isPresent();
     }
 
     @Test
@@ -39,7 +38,7 @@ class UserRepositoryTest {
 
         userRepository.save(user);
 
-        assertThat(userRepository.existsByEmail("jpa-test-exists@example.com")).isTrue();
-        assertThat(userRepository.existsByEmail("jpa-test-missing@example.com")).isFalse();
+        Assertions.assertThat(userRepository.existsByEmail("jpa-test-exists@example.com")).isTrue();
+        Assertions.assertThat(userRepository.existsByEmail("jpa-test-missing@example.com")).isFalse();
     }
 }

@@ -1,10 +1,8 @@
 package com.example.urlshortener.security;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.junit.jupiter.api.Test;
-
 import io.jsonwebtoken.ExpiredJwtException;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class JwtServiceTest {
 
@@ -15,10 +13,9 @@ class JwtServiceTest {
     void generatesTokenAndExtractsClaims() {
         String token = jwtService.generateToken(42L, "user@example.com");
 
-        assertThat(jwtService.extractUserId(token)).isEqualTo(42L);
-        assertThat(jwtService.extractEmail(token)).isEqualTo("user@example.com");
+        Assertions.assertThat(jwtService.extractUserId(token)).isEqualTo(42L);
+        Assertions.assertThat(jwtService.extractEmail(token)).isEqualTo("user@example.com");
     }
-
 
     @Test
     void rejectsExpiredToken() {
@@ -26,7 +23,7 @@ class JwtServiceTest {
                 new JwtService("test-secret-key-with-enough-length-for-hs256-signing", -1_000);
         String token = expiringJwtService.generateToken(1L, "user@example.com");
 
-        assertThatThrownBy(() -> expiringJwtService.parseToken(token))
+        Assertions.assertThatThrownBy(() -> expiringJwtService.parseToken(token))
                 .isInstanceOf(ExpiredJwtException.class);
     }
 }

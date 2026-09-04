@@ -41,6 +41,15 @@ Windows (PowerShell):
 
 แอปรันที่ `http://localhost:8080` โดย default — ถ้า port 8080 ถูกใช้งานอยู่แล้ว override ได้ด้วย `SERVER_PORT` env var เช่น `SERVER_PORT=8081 ./mvnw spring-boot:run`
 
+## Run full stack ด้วย Docker (app + db)
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+รัน backend + PostgreSQL ครบทั้งคู่จาก clean checkout โดยไม่ต้องติดตั้ง JDK/Maven บนเครื่อง แอปจะขึ้นที่ `http://localhost:8080` (override ด้วย `APP_PORT` ใน `.env` ได้ถ้าชนกับ service อื่น)
+
 ## Run tests
 
 ```bash
